@@ -1,0 +1,17 @@
+// parsing voltage/current log data.
+//03/07/2022
+dt=current data table();
+dt<<new column("trigger_q",formula(if(:trigger>100,0,1)));
+dts=dt << Summary(Group( :trigger_q,:Source Table, :magnet ),Max( :time ));
+column("Max(time)")<<set name("Tref");
+dts<<select where(:trigger_q==1); dts<<delete rows();
+dts<<delete column("trigger_q");dts<<delete column("N Rows");
+dts<<new column("run_id",formula(row()));
+dt << Update(With(  dts),Match Columns( :magnet = :magnet,:Source Table=:Source Table ));
+dts<<close window();
+dt<<new column("time_s",formula(:time-:Tref));
+dt<<new column("Current_A",formula((:current-512)/36));
+dt<<new column("magnet_run",formula("magnet="||char(:magnet)||"; run="||char(:run_id)));
+//dt<<new column("voltage_n",formula(:voltage-col max(:voltage)));
+//dt<<select where(:trigger==0);
+dt<<select where(:time_s>100 |:time_s<-20); dt<<hide();dt<<Exclude(); // hide these, they are irrelevant
