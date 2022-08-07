@@ -8,8 +8,8 @@ mylist = []
 
 ser = serial.Serial('COM4', 115200, timeout=1) # 115200 sets up serial connection (make sure baud rate is correct - matches Arduino)    Also check the Arduino serial port
 ### the time out number is critical. 1 seems to be working
-fileNameTag=""
-samples=5000
+fileNameTag="995_125_coil_8and12_Layers"
+samples=10000
 line = 0
 terminate=0
 toAppend=["Gauge","Date"]
@@ -49,8 +49,8 @@ if len(mylist)>0:
     TheHeader=TheHeader+toAppend
     del TheHeader[0]
     TheHeader= ','.join(TheHeader)
-
-    np.savetxt("log_data_orange15mm_5_8_10_coil_"+fileNameTag+"_"+timestr+".csv", mat, delimiter=",", fmt='%s' ,
+     #orange15mm_5_8_10_coil
+    np.savetxt("log_data_"+fileNameTag+"_"+timestr+".csv", mat, delimiter=",", fmt='%s' ,
               header=TheHeader, comments="")
 
 
