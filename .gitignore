@@ -1,0 +1,10 @@
+/arduino_uno_serial_python/*.csv
+/arduino_uno_serial_python/*.py
+/arduino_uno_serial_python/*.R
+/arduino_uno_serial_python/*.jsl
+/arduino_uno_serial_python/*.jmp
+/arduino_uno_serial_python/*.ino
+/arduino_uno_serial_python/*.csvz
+/arduino_uno_serial_python/*.MD
+*.csv
+*.jmp

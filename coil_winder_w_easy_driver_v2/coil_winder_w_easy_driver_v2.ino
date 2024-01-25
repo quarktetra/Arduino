@@ -14,22 +14,20 @@ int windingDir = 8;
 int windingStep = 9;
 int windingEnable = 10;
 
-int interWait=2000;
+int interWait=10000;
 int sweepDelayTime=300; //in micro sec
 int windingDelayTime=300; //in micro sec
 
-float cHeigth=9.3;//11.8; //mm inner height
-float wDiameter=0.435;   //
+float cHeigth=11.8; //mm inner height
+float wDiameter=0.43;   //
 float nTurnsPerLayer=round(cHeigth/wDiameter);  //12/0.43 will fit 28 turns per layer
-float sweepStepsPerRev=wDiameter*1.15*400;// spreader motor
+float sweepStepsPerRev=wDiameter*1.27*1600;// spreader motor
 float overshoot=6;  
-int numLayers=15;
+int numLayers=10;
 int layerIndex;
 float windingStepsPerRev=2.11*1600; // 2*1600 gives a full rev
 int redCount=0;
 int totalturns=0;
-int stopped=1;
- static unsigned long last_start_stop_time = 0;
 void setup() {
   pinMode(opticalSignal, INPUT_PULLUP);
   pinMode(startStopSignal, INPUT_PULLUP);
@@ -63,7 +61,7 @@ void loop()
      digitalWrite(sweepDir, LOW);     
 
  int j;int i; int k;
-pausenow();
+
     for (k = 0; k<overshoot; k++) {
         for (i = 0; i<sweepStepsPerRev; i++)       // Iterate for 4000 microsteps. 
        {
@@ -81,9 +79,7 @@ digitalWrite(sweepDir, HIGH);
    digitalWrite(sweepEnable, LOW); //enable the motor
    digitalWrite(windingEnable, LOW); //enable the motor
   if(layerIndex>2 ){overshoot=4;};
-  //if(layerIndex>1 ){redCount=layerIndex% 2;};
-  redCount=0;
-  //redCount=layerIndex% 2;
+  if(layerIndex>1 ){redCount=layerIndex% 2;};
     //if(layerIndex>3 ){redCount=2;};
         if(layerIndex% 2 == 0)
                 digitalWrite(sweepDir, HIGH);     // Set the Wdirection.;
@@ -91,10 +87,9 @@ digitalWrite(sweepDir, HIGH);
                 digitalWrite(sweepDir, LOW);     // Set the Wdirection.
          
           for (j = 0; j<(nTurnsPerLayer+redCount); j++)      {
-
-            pausenow();
           totalturns=totalturns+1;
 
+          
           //Serial.print(",Layer");Serial.print(", TurnsInThisLayer:"); Serial.print(",TotalTurns"); Serial.print(",HalfRotations:");  
 
           
@@ -112,9 +107,8 @@ digitalWrite(sweepDir, HIGH);
               delayMicroseconds(sweepDelayTime);      // This delay time is close to top speed for this   // Too fast-->> the motor stalls.    
           } 
 
-//  Serial.print("header:");Serial.print(",Layer");Serial.print(",TurnsInThisLayer"); Serial.print(",TotalTurns"); Serial.print(",HalfRotations");; Serial.print(",cHeigth");; Serial.println(",wDiameter");   
 
-          Serial.print("ToBeLogged,");
+
           Serial.print(layerIndex+1);Serial.print(","); 
           Serial.print(j+1); ;Serial.print(",");
           Serial.print(totalturns); ;Serial.print(",");
@@ -172,30 +166,10 @@ if(layerIndex==numLayers-1 ){
 
 void startStop()
 {
-//stopped;
-
-  if (millis() - last_start_stop_time> 300) // debouncing noise.
-  {   last_start_stop_time=millis();
-      //Serial.print("count:"); Serial.println(counterV);   
-      ;
-      stopped=(stopped+1)% 2;
-  }
+Serial.println("hey");
 
 }
-void pausenow()
-{
-  if(stopped==1){
-    delay(50);
- 
-     digitalWrite(sweepEnable, HIGH); //HIGH: disable, LOW:enable
-     digitalWrite(windingEnable, HIGH); //HIGH: disable, LOW:enable
-     Serial.print("stopped:");Serial.println(stopped);
-     pausenow();
-    }else{
-         digitalWrite(sweepEnable, LOW); //HIGH: disable, LOW:enable
-         digitalWrite(windingEnable, LOW); //HIGH: disable, LOW:enable
-      }
-  };
+
 
 void my_interrupt_handler()
 {

@@ -9,7 +9,7 @@ int TriggerSensorValue;
 int OpticalSensorValue;     
 
 void setup() {
-  Serial.begin(115200); // This should match the value in Python if data is read from that side. 250,000 is fast enough to sample once per millisecond.
+  Serial.begin(250000); // This should match the value in Python if data is read from that side. 250,000 is fast enough to sample once per millisecond.
   Serial.print("time_ms"); Serial.print(",");Serial.print("Voltage"); Serial.print(",");Serial.print("Current"); Serial.print(",");Serial.println("Trigger"); //match the Header in Python.
 }
 
