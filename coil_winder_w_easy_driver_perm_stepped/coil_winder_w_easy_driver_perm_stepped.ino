@@ -1,18 +1,21 @@
 
 // coil winder with Arduino uno, 4-terminal stepper and easy drive module
-const byte opticalSignal = 2; //connect the optical signal here. Digital output of the coupler
-const byte startStopSignal=3 ;
+
 int counterV=0;
 int lasttime=millis();
 
-int sweepDir = 12;
-int sweepStep = 13;
-int sweepEnable = 11;
 
-
+const byte opticalSignal = 2; //connect the optical signal here. Digital output of the coupler
+const byte startStopSignal=3 ;
+// 4 is another button
 int windingDir = 8;
 int windingStep = 9;
 int windingEnable = 10;
+
+int sweepEnable = 11;
+int sweepDir = 12;
+int sweepStep = 13;
+
 
 int interWait=2000;
 int sweepDelayTime=300; //in micro sec
@@ -38,19 +41,11 @@ void setup() {
   
   Serial.begin(115200);
 
-  pinMode(sweepDir, OUTPUT);
-  pinMode(sweepStep, OUTPUT);
-  pinMode(sweepEnable, OUTPUT);
-  digitalWrite(sweepDir, HIGH);     // Set the Wdirection.
-  digitalWrite(sweepEnable, HIGH); //disable the Wmotor
-  pinMode(windingDir, OUTPUT);
-  pinMode(windingStep, OUTPUT);
-  pinMode(windingEnable, OUTPUT);
-  digitalWrite(windingDir, LOW);     // Set the Wdirection.
-  digitalWrite(windingEnable, HIGH); //disable the Wmotor
+  pinMode(sweepDir, OUTPUT); pinMode(sweepStep, OUTPUT);pinMode(sweepEnable, OUTPUT);
+  digitalWrite(sweepDir, HIGH);  digitalWrite(sweepEnable, HIGH);pinMode(windingDir, OUTPUT);pinMode(windingStep, OUTPUT);
+  pinMode(windingEnable, OUTPUT);digitalWrite(windingDir, LOW);    digitalWrite(windingEnable, HIGH); 
   Serial.print("nTurnsPerLayer");Serial.print(nTurnsPerLayer);Serial.print("; sweepStepsPerRev:");Serial.println(sweepStepsPerRev); 
   Serial.println("Sending the header info");   
-
   Serial.print("header:");Serial.print(",Layer");Serial.print(",TurnsInThisLayer"); Serial.print(",TotalTurns"); Serial.print(",HalfRotations");; Serial.print(",cHeigth");; Serial.println(",wDiameter");   
 }
 

@@ -168,7 +168,8 @@ if(CentralCailbrationDone==0){
 
   
   if(FullCalibrationDone==0){
-       Serial.println("Will do a FULL calibration");
+
+Serial.println("Will do a FULL calibration");
 delay(2000);
 
  digitalWrite(sweepEnable, LOW); //enable the motor
@@ -202,14 +203,6 @@ int thisDelta=999;
     
      for (j = 0; j<jmax; j++) {
 
-
-
-for (i = 0; i<sweepStepsPerRev; i++)       // Iterate for 4000 microsteps. 
-  {
-      digitalWrite(sweepStep, LOW);  // This LOW to HIGH change is what creates the
-      digitalWrite(sweepStep, HIGH); // "Rising Edge" so the easydriver knows to when to step.
-      delayMicroseconds(sweepDelayTime);      // This delay time is close to top speed for this   // Too fast-->> the motor stalls.    
-  }
         delay(jwait);
      thisOV=analogRead(OpticalSensorPin);
      if(abs(thisOV-centerOV)< deltaToCenterOV ) {
@@ -217,6 +210,14 @@ for (i = 0; i<sweepStepsPerRev; i++)       // Iterate for 4000 microsteps.
        deltaToCenterOV=abs(thisOV-centerOV);bottomToCenter=j;
        
      }
+
+for (i = 0; i<sweepStepsPerRev; i++)       // Iterate for 4000 microsteps. 
+  {
+      digitalWrite(sweepStep, LOW);  // This LOW to HIGH change is what creates the
+      digitalWrite(sweepStep, HIGH); // "Rising Edge" so the easydriver knows to when to step.
+      delayMicroseconds(sweepDelayTime);      // This delay time is close to top speed for this   // Too fast-->> the motor stalls.    
+  }
+
      // Serial.print(" jmax:");Serial.print(jmax); Serial.print("; j:");Serial.print(j);   ;Serial.print(";  OPT:");Serial.print( thisOV);  Serial.print("; thisDelta:");Serial.print(abs(thisOV-centerOV));  Serial.print(" deltaToCenterOV :");Serial.print(deltaToCenterOV ); Serial.print(";  bottomToCenter:");Serial.println(bottomToCenter);
 
 };
@@ -232,14 +233,14 @@ float thisP;
 //int parkAtOV=-99;
 //int deltatoparkAtOV=999;
 //int deltatoparkAtOVj=0;
-
+  digitalWrite(sweepEnable, LOW); //enable the motor
       for (j = jmax; j>0; j--) {
         thisP= (j-bottomToCenter-1)*conversionF;
           thisOV=analogRead(OpticalSensorPin);
 
     optCalValue[j]=thisOV;
     optCalStep[j]=thisP;
-         if(abs(thisP-parkAtPos)< deltatoparkAtOV && thisP<parkAtPos) { deltatoparkAtOV=abs(thisP-parkAtPos);deltatoparkAtOVj=j;}
+         //if(abs(thisP-parkAtPos)< deltatoparkAtOV && thisP<parkAtPos) { deltatoparkAtOV=abs(thisP-parkAtPos);deltatoparkAtOVj=j;}
          //Serial.print("j:");Serial.print(j);Serial.print(", thisP:");Serial.print(thisP);Serial.print(", deltatoparkAtOVj:");Serial.println(deltatoparkAtOVj);
 
 
@@ -263,24 +264,13 @@ for (i = 0; i<sweepStepsPerRev; i++)       // Iterate for 4000 microsteps.
       }
  FullCalibrationDone=1;analogWrite(TransistorBasePin,255);
 
-Serial.print("deltatoparkAtOVj:");Serial.println(deltatoparkAtOVj);
+//Serial.print("deltatoparkAtOVj:");Serial.println(deltatoparkAtOVj);
  
  
   digitalWrite(sweepDir, HIGH);     // Set the Wdirection.
   digitalWrite(sweepEnable, LOW); //enable the motor
 
-     for (j = 0; j<backoff; j++) {
 
-
-
-for (i = 0; i<sweepStepsPerRev; i++)       // Iterate for 4000 microsteps. 
-  {
-      digitalWrite(sweepStep, LOW);  // This LOW to HIGH change is what creates the
-      digitalWrite(sweepStep, HIGH); // "Rising Edge" so the easydriver knows to when to step.
-      delayMicroseconds(sweepDelayTime);      // This delay time is close to top speed for this   // Too fast-->> the motor stalls.    
-  }
-
-     };
 
 //Serial.println(" Parking"); 
 delay(2000);
@@ -304,7 +294,7 @@ delay(2000);
             Serial.print("CalibDataHeader,");Serial.print(  "position" );Serial.print(",");Serial.println( "oValue");
             
           for (int i=1; i<jmax; i++) {
-            Serial.print("CalibData,");Serial.print(  optCalStep[i] );Serial.print(",");Serial.println( optCalValue[i] );
+            Serial.print("CalibData,");Serial.print(  optCalStep[i] );Serial.print(",");Serial.print( optCalValue[i] );Serial.print(",");Serial.println(centerOV);
            delay(10);
           };
         
@@ -320,8 +310,8 @@ Serial.println("TerminateCalibTransmission");
    if(triggered==1){ 
  Serial.println(" Sending a pulse now!"); 
 
-        for (int i=0; i<15; i++) {
-          delay(50);digitalWrite(StatusLEDPin,LOW);delay(50);digitalWrite(StatusLEDPin,HIGH);
+        for (int i=0; i<4; i++) {
+          delay(500);digitalWrite(StatusLEDPin,LOW);delay(500);digitalWrite(StatusLEDPin,HIGH);
           };
         
        // analogWrite(TransistorBasePin,0);
@@ -334,9 +324,9 @@ Serial.println("TerminateCalibTransmission");
             OpticalSensorValue[i] = analogRead(OpticalSensorPin);
             if(i==1){analogWrite(TransistorBasePin,0);}
             //delayMicroseconds(188);
-            delayMicroseconds(100); cumulTime=cumulTime+0.1;
-            if(i>40){delay(2);cumulTime=cumulTime+2;};
-            if(i>80){delay(3);cumulTime=cumulTime+3;};
+            delayMicroseconds(150); cumulTime=cumulTime+0.15;
+            if(i>30){delay(1);cumulTime=cumulTime+1;};
+            if(i>40){delay(1);cumulTime=cumulTime+1;};
            // BiasTrig[i]=cumulTime;
            if(cumulTime>37){digitalWrite(biasTrigger, HIGH); BiasTrig[i]=1; }else{BiasTrig[i]=0;}
             // if(i>30){delayMicroseconds(500);}

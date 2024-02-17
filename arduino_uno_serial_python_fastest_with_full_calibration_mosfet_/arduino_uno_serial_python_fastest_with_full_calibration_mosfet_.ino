@@ -1,15 +1,11 @@
-// arduino code arduino_uno_serial_python_fastest_with_f_calib_MOS_delayed   in C:\Users\451516\Documents\github\Arduino
-// rcode    PlotterNewSetup.R     in C:\Users\451516\Documents\github\Arduino\arduino_uno_serial_python
-// plot calib data with   C:\Users\451516\Documents\github\shutterSurveyBook\calibration.R
-// C:\Users\451516\Documents\github\Arduino\arduino_uno_serial_python
-// arduino_uno_serial_python_fastest
-//arduino_uno_serial_python_w_calib_data.py
-//
-int sweepDelayTime=300; //in micro sec
-float sweepStepsPerRev=400*1.25;  //1600 is full turn,
-float conversionF=0.253;//0.247=21/85; //50 steps give 13 mm of move /// typical numbers: min=17mm; center: 26mm; top:36mm.  Sweep travel= 36-17=19mm ; divide this by jmax
-#define jmax  75 //57   
 
+int sweepDir = 12;
+int sweepStep = 13;
+int sweepEnable = 11;
+int sweepDelayTime=300; //in micro sec
+float sweepStepsPerRev=400*1.3;  //1600 is full turn,
+float conversionF=0.26*1.3; //50 steps give 13 mm of move
+#define jmax  60 //57   
 
 int jwait=200;
 
@@ -18,7 +14,8 @@ int parkAtOV=-99;
 float deltatoparkAtOV=999.0;
 int deltatoparkAtOVj=0;
 
-
+int CenterNowPin = 6;  // send a pulse to center
+int CalibrationButtonPin = 7;  // calib start 
 //int CollectorEmittor = A0;  // This connects to the photosensor               
 
 int JSXSensorPin = A0;  // JoystickX pin   
@@ -30,25 +27,14 @@ int CurrentSensorPin = A1;  // The output put of the ACS712 module. Centered aro
 int TriggerButtonPin = 2;  // This will go down to zero as the switch is closed. Will use this to set t=0; will use this to activate the transistor  
 int TransistorBasePin = 3;  // This will go down to zero as the switch is closed. Will use this to set t=0; will use this to activate the transistor  
 int RelayTransistorBasePin = 4;  // Activate realy; for calibration this is PNP; leave it at HIGH to turn it off
-
-int CenterNowPin = 6;  // send a pulse to center
-int CalibrationButtonPin = 7;  // calib start 
-int StatusLEDPin=9; //whatsup LED
-int biasTrigger = 8;  // bias trigger. use a transisto here
-
- 
-int sweepDir = 12;
-int sweepStep = 13;
-int sweepEnable = 11;
-
  int centerOV=0;
   int initOV=0;
-const byte maxData = 55; 
+int StatusLEDPin=8; //whatsup LED
+const byte maxData = 90; 
 
 int VoltageSensorValue[maxData];     
 int CurrentSensorValue[maxData];     
 int OpticalSensorValue[maxData]; 
-int BiasTrig[maxData]; 
 int optCalValue[jmax];
 float optCalStep[jmax];     
 long timer[maxData]; 
@@ -59,21 +45,12 @@ int FullCalibrationDone=1;
 int CentralCailbrationDone=0;
 int backoff=0;
 int thisOV;
-float cumulTime=0;
+
 void setup() {
   
 pinMode(sweepDir, OUTPUT);
 pinMode(sweepStep, OUTPUT);
 pinMode(sweepEnable, OUTPUT);
-pinMode(biasTrigger, OUTPUT);
-digitalWrite(biasTrigger, HIGH); 
-delay(200);
-digitalWrite(biasTrigger,LOW); 
-delay(200);
-digitalWrite(biasTrigger, HIGH); 
-delay(200);
-digitalWrite(biasTrigger,LOW); 
-
 digitalWrite(sweepDir, HIGH);     // Set the Wdirection.
 digitalWrite(sweepEnable, HIGH); //disable the Wmotor
 pinMode(TriggerButtonPin, INPUT_PULLUP);
@@ -133,7 +110,7 @@ void loop() {
 
 initOV=analogRead(OpticalSensorPin);
 if(CentralCailbrationDone==0){        
-    digitalWrite(RelayTransistorBasePin,HIGH);Serial.println("Will do a center  calibration");delay(1000);
+      digitalWrite(RelayTransistorBasePin,HIGH);Serial.println("Will do a center  calibration");delay(1000);
     initOV=analogRead(OpticalSensorPin);initOV=analogRead(OpticalSensorPin);
     delay(500);
     //Serial.print("initOV read:");Serial.println(initOV); 
@@ -144,14 +121,9 @@ if(CentralCailbrationDone==0){
    
      delay(200);
      digitalWrite(StatusLEDPin,LOW);
- analogWrite(TransistorBasePin,0);delay(1000); 
- analogWrite(TransistorBasePin,255);delay(1000); 
-  analogWrite(TransistorBasePin,0);delay(1000); 
- analogWrite(TransistorBasePin,255);delay(1000); 
- 
  analogWrite(TransistorBasePin,0);delay(2000); 
-  centerOV=analogRead(OpticalSensorPin);
-  delay(1000); 
+centerOV=analogRead(OpticalSensorPin);
+delay(100); 
      
  //Serial.print("; current:");Serial.print(theC);; Serial.print("; Voltage:");Serial.println(analogRead(VoltageSensorPin)); 
      analogWrite(TransistorBasePin,255);
@@ -217,7 +189,7 @@ for (i = 0; i<sweepStepsPerRev; i++)       // Iterate for 4000 microsteps.
        deltaToCenterOV=abs(thisOV-centerOV);bottomToCenter=j;
        
      }
-     // Serial.print(" jmax:");Serial.print(jmax); Serial.print("; j:");Serial.print(j);   ;Serial.print(";  OPT:");Serial.print( thisOV);  Serial.print("; thisDelta:");Serial.print(abs(thisOV-centerOV));  Serial.print(" deltaToCenterOV :");Serial.print(deltaToCenterOV ); Serial.print(";  bottomToCenter:");Serial.println(bottomToCenter);
+      // Serial.print(" j:");Serial.print(j);   ;Serial.print(";  OPT:");Serial.print( thisOV);  Serial.print("; thisDelta:");Serial.print(abs(thisOV-centerOV));  Serial.print(" deltaToCenterOV :");Serial.print(deltaToCenterOV ); Serial.print(";  bottomToCenter:");Serial.println(bottomToCenter);
 
 };
 
@@ -226,7 +198,7 @@ CenterToTop=jmax-bottomToCenter;
      
        digitalWrite(sweepDir, LOW);     // Set the Wdirection.
 float thisP; 
-     delay(5000);
+     delay(200);
      //Serial.println(" Reversing...");
 
 //int parkAtOV=-99;
@@ -256,9 +228,6 @@ for (i = 0; i<sweepStepsPerRev; i++)       // Iterate for 4000 microsteps.
 
 
        //Serial.print(" j:");Serial.print(j);Serial.print(" OPT:");Serial.print(thisOV);  Serial.print("; thisP:");Serial.println(thisP);  
-
-          //   Serial.print("going back jmax:");Serial.print(jmax); Serial.print("; j:");Serial.print(j);   ;Serial.print(";  OPT:");Serial.print( thisOV);  Serial.print("; thisDelta:");Serial.print(abs(thisOV-centerOV));  Serial.print(" deltaToCenterOV :");Serial.print(deltaToCenterOV ); Serial.print(";  bottomToCenter:");Serial.println(bottomToCenter);
-
 
       }
  FullCalibrationDone=1;analogWrite(TransistorBasePin,255);
@@ -334,11 +303,9 @@ Serial.println("TerminateCalibTransmission");
             OpticalSensorValue[i] = analogRead(OpticalSensorPin);
             if(i==1){analogWrite(TransistorBasePin,0);}
             //delayMicroseconds(188);
-            delayMicroseconds(100); cumulTime=cumulTime+0.1;
-            if(i>40){delay(2);cumulTime=cumulTime+2;};
-            if(i>80){delay(3);cumulTime=cumulTime+3;};
-           // BiasTrig[i]=cumulTime;
-           if(cumulTime>37){digitalWrite(biasTrigger, HIGH); BiasTrig[i]=1; }else{BiasTrig[i]=0;}
+            delayMicroseconds(100);
+            if(i>20){delayMicroseconds(500);};
+            if(i>30){delay(2);};
             // if(i>30){delayMicroseconds(500);}
              
             
@@ -353,7 +320,6 @@ Serial.println("TerminateCalibTransmission");
          };
          delay(1000);
         analogWrite(TransistorBasePin,255);
-        digitalWrite(biasTrigger, LOW);
            
         Serial.println(" Sending the data to PC;"); 
            for (int i=0; i<20; i++) {
@@ -369,9 +335,7 @@ Serial.println("TerminateCalibTransmission");
            //Serial.print(",");Serial.print(timer[i]/1000); 
            Serial.print(",");Serial.print( VoltageSensorValue[i]);//
            Serial.print(",");Serial.print( CurrentSensorValue[i]);
-           Serial.print(",");Serial.print( OpticalSensorValue[i]);//-centerOV
-            Serial.print(",");Serial.println( BiasTrig[i]);
-           
+           Serial.print(",");Serial.println( OpticalSensorValue[i]);//-centerOV
            //Serial.print(",");Serial.println( CEValue[i]);//-centerOV
            delay(10);
           };

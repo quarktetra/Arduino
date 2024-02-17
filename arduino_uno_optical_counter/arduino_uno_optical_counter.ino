@@ -21,7 +21,7 @@ void my_interrupt_handler()
 {
   static unsigned long last_interrupt_time = 0;
   unsigned long interrupt_time = millis();
-  if (interrupt_time - last_interrupt_time > 100) // debouncing noise.
+  if (interrupt_time - last_interrupt_time > 300) // debouncing noise.
   {
       counterV=counterV+1;
  

@@ -1,17 +1,158 @@
 // parsing voltage/current log data.
 //03/07/2022
-dt=current data table();
-dt<<new column("trigger_q",formula(if(:trigger>100,0,1)));
-dts=dt << Summary(Group( :trigger_q,:Source Table, :magnet ),Max( :time ));
+
+fileopener=function({thepath},
+	Open(
+	thepath,
+	columns(
+		New Column( "time", Numeric, "Continuous", Format( "Best", 12 ) ),
+		New Column( "voltage", Numeric, "Continuous", Format( "Best", 12 ) ),
+		New Column( "current", Numeric, "Continuous", Format( "Best", 12 ) ),
+		New Column( "trigger", Numeric, "Continuous", Format( "Best", 12 ) ),
+		New Column( "optic", Numeric, "Continuous", Format( "Best", 12 ) ),
+		New Column( "magnet", Numeric, "Continuous", Format( "Best", 12 ) )
+	),
+	Import Settings(
+		End Of Line( CRLF, CR, LF ),
+		End Of Field( Comma, CSV( 1 ) ),
+		Strip Quotes( 0 ),
+		Use Apostrophe as Quotation Mark( 0 ),
+		Use Regional Settings( 0 ),
+		Scan Whole File( 1 ),
+		Treat empty columns as numeric( 0 ),
+		CompressNumericColumns( 0 ),
+		CompressCharacterColumns( 0 ),
+		CompressAllowListCheck( 0 ),
+		Labels( 1 ),
+		Column Names Start( 1 ),
+		Data Starts( 2 ),
+		Lines To Read( "All" ),
+		Year Rule( "20xx" )
+	)
+)
+);
+
+basepath="C:\Users\451516\Documents\github\Arduino\arduino_uno_serial_python\";
+thefiles=Files In Directory( basepath );
+findex=0;
+for(t=1,t<=length( thefiles),t++,
+	thisfile=thefiles[t];
+	if(substr(thisfile,length(thisfile)-3,4)==".csv",
+		findex++;
+		if(findex==1,dt=fileopener(basepath||thisfile); dt<<new column("Source Table",formula(thisfile));:Source Table<<delete formula(),
+		dttemp=fileopener(basepath||thisfile);
+		dttemp<<new column("Source Table",formula(thisfile));:Source Table<<delete formula();
+		
+		dt<<Concatenate(dttemp,Output Table( "Combined table" ), append to first table(1));
+		dttemp<<close window();
+		
+		 )
+	 
+	 )
+
+);
+datetime = Today();
+date = datetime -Time Of Day( datetime ) ;
+dateString= char(As Date( date ))||"_"||char( hour(Time Of Day( datetime ) ))||"_"||char( minute(Time Of Day( datetime ) ))||"_"||char( second(Time Of Day( datetime ) ));
+
+dt<<set name("combined_table_"||dateString);
+
+
+
+dt<<new column("Current_A",formula(-(:current-512)/36)); // minus if current is in the opposite direction
+dt<<new column("Voltage_V",formula(round(:voltage/33.7,1))); // minus if current is in the opposite direction
+
+dt<<new column("trigger_q",formula(if(:trigger>50,0,1)));
+dts=dt << Summary(Group( :trigger_q,:Source Table, :magnet,damperT ),Max( :time ),Max( :optic ), Max(:Voltage_V));
+
+
 column("Max(time)")<<set name("Tref");
+
+column("Max(optic)")<<set name("Oref");
+column("Max(Voltage_V)")<<set name("CapInitVoltage");
+
+
 dts<<select where(:trigger_q==1); dts<<delete rows();
 dts<<delete column("trigger_q");dts<<delete column("N Rows");
 dts<<new column("run_id",formula(row()));
-dt << Update(With(  dts),Match Columns( :magnet = :magnet,:Source Table=:Source Table ));
+dt << Update(With(  dts),Match Columns( :magnet = :magnet,:Source Table=:Source Table,:damperT=damperT ));
 dts<<close window();
-dt<<new column("time_s",formula(:time-:Tref));
-dt<<new column("Current_A",formula((:current-512)/36));
-dt<<new column("magnet_run",formula("magnet="||char(:magnet)||"; run="||char(:run_id)));
+
+
+//tmin=col min(:time);
+
+//dt<<new column("time_ms",formula(round((:time-tmin)/1000,2) ));
+dt<<new column("time_ms",formula(round((:time-:Tref),2) ));
+dt<<new column("Run_label",formula("magnet="||char(:magnet)||"; NumberOfCopperSheets="||char(:damperT)||"; run="||char(:run_id) ||";CapInitVoltage="||char(:CapInitVoltage)));
+
+//dt<<new column("flatland",formula(if(:time_ms<150 &:time_ms>100,1,0))); 
+//dts=dt << Summary(Group( :Source Table,:flatland ),Mean( :optic ));
+//dts<<select where(:flatland==0); dts<<delete rows();
+//column("Mean(optic)")<<set name("Omean");;dts<<delete column("N Rows");
+//dt << Update(With(  dts),Match Columns( :Source Table=:Source Table ));dts<<close window();
+dt=current data table();
+dt<<select where(:time_ms<-2); dt<<hide();dt<<Exclude(); // hide these, they are irrelevant
+
+//dt<<select where(:time_ms>200); dt<<hide();dt<<Exclude(); 
+//dt<<new column("z_pos(mm)",formula(-2.5*(:optic-683)/(:Oref-683))); // minus if current is in the opposite direction
+dt<<new column("z_pos(mm)",formula(-2.5*(:optic-705)/(971-705))); // minus if current is in the opposite direction
+
 //dt<<new column("voltage_n",formula(:voltage-col max(:voltage)));
 //dt<<select where(:trigger==0);
-dt<<select where(:time_s>100 |:time_s<-20); dt<<hide();dt<<Exclude(); // hide these, they are irrelevant
+dt<<select where(:time_ms>50 |:time_ms<-2); dt<<hide();dt<<Exclude(); // hide these, they are irrelevant
+
+dt<<clear select();
+
+Graph Builder(
+	Size( 1198, 721 ),
+	Show Control Panel( 0 ),
+	Variables(
+		X( :time_ms ),
+		Y( :Current_A ),
+		Y( :Name( "optic" ), Position( 1 ), Side( "Right" ) ),
+		Group X( :Run_label )
+	),
+	Elements(
+		Points( X, Y( 1 ), Legend( 47 ) ),
+		Smoother( X, Y( 1 ), Legend( 48 ), Lambda( 0.000001 ) ),
+		Points( X, Y( 2 ), Legend( 49 ), Jitter Limit( 0.7523 ) ),
+		Smoother( X, Y( 2 ), Legend( 50 ), Lambda( 0.000001 ) )
+	)
+);
+
+dt<<save();
+throw();
+Graph Builder(
+	Size( 1198, 721 ),
+	Show Control Panel( 0 ),
+	Variables(
+		X( :time_ms ),
+		Y( :Current_A ),
+		Y( :Name( "z_pos(mm)" ), Position( 1 ), Side( "Right" ) ),
+		Group X( :Run_label )
+	),
+	Elements(
+		Points( X, Y( 1 ), Legend( 47 ) ),
+		Smoother( X, Y( 1 ), Legend( 48 ), Lambda( 0.000001 ) ),
+		Points( X, Y( 2 ), Legend( 49 ), Jitter Limit( 0.7523 ) ),
+		Smoother( X, Y( 2 ), Legend( 50 ), Lambda( 0.000001 ) )
+	)
+);
+
+
+dt=current data table();
+dt<<select where(:time_ms<-1|:time_ms>300); dt<<hide();dt<<Exclude(); // hide these, they are irrelevant
+
+
+dt<< invert row selection();
+dt<< clear column selection();
+dts=Data Table( "voltage_sweep_combinedwproperScales" ) <<
+Subset(
+	Output Table( " voltage_sweep_combinedwproperScales_SS" ),
+	Selected Rows( 1 ));
+	
+	
+	dts<<save("voltage_sweep_combinedwproperScales2.csv");
+	dts<<save("C:\Users\451516\Documents\github\tetraquark_c\public\EBOOKS\opticalShutter\_book\voltage_sweep_combinedwproperScales2.csv");
+	dts<<save("C:\Users\451516\Documents\github\tetraquark_c\static\EBOOKS\opticalShutter\_book\voltage_sweep_combinedwproperScales2.csv");
+	dts<<save("C:\Users\451516\Documents\github\shutterSurveyBook\_book\voltage_sweep_combinedwproperScales2.csv");
